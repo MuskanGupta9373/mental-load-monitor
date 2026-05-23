@@ -1,0 +1,11 @@
+date,task,subject,due_date,priority,status
+2026-05-17,Complete HTML Assignment,Web Dev,2026-05-18,high,completed
+2026-05-18,Java OOP Practice,Java,2026-05-20,high,completed
+2026-05-19,DSA Array Problems,DSA,2026-05-21,medium,completed
+2026-05-20,CSS Flexbox Project,Web Dev,2026-05-22,high,pending
+2026-05-20,Read Java Chapter 5,Java,2026-05-21,low,pending
+2026-05-21,Solve 10 LeetCode,DSA,2026-05-23,high,pending
+2026-05-22,JavaScript DOM Practice,Web Dev,2026-05-23,high,pending
+2026-05-22,Physics Assignment,Physics,2026-05-24,medium,pending
+2026-05-23,Hackathon Submission,Hackathon,2026-05-31,high,pending
+2026-05-23,Math Tutorial,Math,2026-05-25,medium,pending

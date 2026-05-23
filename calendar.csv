@@ -1,0 +1,15 @@
+date,event_name,duration_minutes,type
+2026-05-17,Math Class,60,class
+2026-05-17,Assignment Submission,30,deadline
+2026-05-18,Physics Lab,120,class
+2026-05-18,Group Study,90,study
+2026-05-19,Java Practice,60,study
+2026-05-20,College Fest Meeting,45,meeting
+2026-05-20,Web Dev Project,120,project
+2026-05-20,Exam Prep,90,study
+2026-05-21,Rest Day,0,personal
+2026-05-22,DSA Practice,60,study
+2026-05-22,Project Discussion,45,meeting
+2026-05-22,Assignment Work,90,project
+2026-05-23,Hackathon Work,180,project
+2026-05-23,College Class,60,class

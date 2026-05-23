@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mental Load Monitor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #050510;
+      color: #fff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Particle canvas */
+    #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+    .container { max-width: 860px; margin: 0 auto; padding: 2rem 1rem; position: relative; z-index: 1; }
+
+    /* Header */
+    header { text-align: center; margin-bottom: 2rem; }
+    .brain-wrap { display: inline-block; margin-bottom: 1rem; animation: float 3s ease-in-out infinite; }
+    .brain-3d {
+      width: 80px; height: 80px;
+      background: radial-gradient(circle at 35% 35%, #a78bfa, #6c63ff, #3b2fcf);
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      box-shadow: 0 0 30px #6c63ff88, 0 0 60px #6c63ff44, inset 0 -5px 15px #3b2fcf88;
+      position: relative;
+      animation: pulse3d 2s ease-in-out infinite;
+    }
+    .brain-3d::after {
+      content: '🧠';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2.2rem;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    @keyframes pulse3d { 0%,100%{box-shadow:0 0 30px #6c63ff88,0 0 60px #6c63ff44} 50%{box-shadow:0 0 50px #6c63ffaa,0 0 100px #6c63ff66} }
+
+    header h1 { font-size: 2.2rem; font-weight: 800; background: linear-gradient(135deg, #a78bfa, #6c63ff, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    header p { color: #666; font-size: 0.9rem; margin-top: 0.3rem; }
+
+    /* Date + button */
+    .date-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 1.5rem; }
+    input[type="date"] { padding: 10px 16px; border-radius: 12px; border: 1px solid #2a2a4a; background: #0f0f2a; color: #fff; font-size: 14px; outline: none; }
+    .btn-analyze {
+      padding: 10px 28px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, #6c63ff, #38bdf8);
+      color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 0 20px #6c63ff66;
+      transition: all 0.3s;
+    }
+    .btn-analyze:hover { transform: scale(1.05); box-shadow: 0 0 30px #6c63ffaa; }
+
+    /* Coral badge */
+    .coral-badge {
+      background: linear-gradient(135deg, #0a1a0a, #0f2a0f);
+      border: 1px solid #2a4a2a;
+      border-radius: 12px; padding: 0.7rem 1rem;
+      margin-bottom: 1.5rem; font-size: 0.82rem; color: #4ade80;
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 0 15px #4ade8022;
+    }
+
+    /* OVERLOAD ALERT */
+    .alert-banner {
+      background: linear-gradient(135deg, #3d0000, #5a0000);
+      border: 1px solid #e74c3c;
+      border-radius: 12px; padding: 1rem 1.2rem;
+      margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 0 25px #e74c3c44;
+      animation: alertpulse 1.5s ease-in-out infinite;
+    }
+    @keyframes alertpulse { 0%,100%{box-shadow:0 0 25px #e74c3c44} 50%{box-shadow:0 0 45px #e74c3c88} }
+    .alert-banner .alert-icon { font-size: 1.8rem; }
+    .alert-banner h3 { font-size: 1rem; font-weight: 700; color: #ff6b6b; }
+    .alert-banner p { font-size: 0.82rem; color: #ffaaaa; margin-top: 2px; }
+    .hidden { display: none !important; }
+
+    /* Grid */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .card {
+      background: linear-gradient(135deg, #0d0d20, #12122a);
+      border-radius: 16px; padding: 1.5rem;
+      border: 1px solid #1e1e3a;
+      transition: all 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, #6c63ff, #38bdf8, #4ade80);
+      opacity: 0.6;
+    }
+    .card:hover { transform: translateY(-3px); border-color: #6c63ff44; box-shadow: 0 8px 30px #6c63ff22; }
+    .card.full { grid-column: 1 / -1; }
+    .card h3 { font-size: 0.8rem; color: #666; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 1rem; }
+
+    /* Score */
+    .score-big { font-size: 5rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+    .score-sub { color: #555; font-size: 0.78rem; margin-top: 4px; }
+    .level-badge { display: inline-block; padding: 5px 18px; border-radius: 99px; font-size: 12px; font-weight: 700; margin-top: 0.8rem; letter-spacing: 0.05em; }
+
+    /* Advice */
+    .advice-emoji { font-size: 2rem; margin-bottom: 0.5rem; }
+    .advice-level { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .advice-text { font-size: 0.88rem; color: #999; line-height: 1.7; }
+
+    /* Reasons */
+    .reason-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #1a1a30; color: #ccc; font-size: 0.88rem; }
+    .reason-item:last-child { border-bottom: none; }
+
+    /* Wellbeing */
+    .wb-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
+    .wb-item { background: #0a0a1a; border-radius: 12px; padding: 0.8rem; text-align: center; border: 1px solid #1a1a30; }
+    .wb-value { font-size: 1.4rem; font-weight: 700; background: linear-gradient(135deg, #a78bfa, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .wb-label { font-size: 0.72rem; color: #666; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* Tasks */
+    .task-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #1a1a30; }
+    .task-item:last-child { border-bottom: none; }
+    .task-name { font-size: 0.9rem; font-weight: 500; }
+    .task-meta { font-size: 0.75rem; color: #666; margin-top: 2px; }
+    .priority-badge { padding: 3px 12px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+    .p-high { background: #3d000022; border: 1px solid #e74c3c; color: #e74c3c; }
+    .p-medium { background: #3d2e1022; border: 1px solid #f39c12; color: #f39c12; }
+    .p-low { background: #1a3d1a22; border: 1px solid #4ade80; color: #4ade80; }
+
+    /* Trend */
+    .trend-row { display: flex; gap: 6px; align-items: flex-end; height: 100px; }
+    .trend-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; }
+    .trend-bar { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.8s cubic-bezier(0.34,1.56,0.64,1); min-height: 4px; box-shadow: 0 0 8px currentColor; }
+    .trend-date { font-size: 9px; color: #555; }
+    .trend-val { font-size: 9px; color: #888; }
+
+    /* Check-in modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #000000cc; z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(6px);
+    }
+    .modal {
+      background: linear-gradient(135deg, #0d0d20, #12122a);
+      border: 1px solid #2a2a4a; border-radius: 20px;
+      padding: 2rem; width: 90%; max-width: 420px;
+      box-shadow: 0 0 60px #6c63ff44;
+    }
+    .modal h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .modal p { color: #666; font-size: 0.85rem; margin-bottom: 1.5rem; }
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label { font-size: 0.82rem; color: #888; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-group input, .form-group select {
+      width: 100%; padding: 10px 14px; border-radius: 10px;
+      border: 1px solid #2a2a4a; background: #080818;
+      color: #fff; font-size: 14px; outline: none;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: #6c63ff; box-shadow: 0 0 10px #6c63ff44; }
+    .modal-btns { display: flex; gap: 10px; margin-top: 1.5rem; }
+    .btn-save {
+      flex: 1; padding: 12px; border-radius: 10px; border: none;
+      background: linear-gradient(135deg, #6c63ff, #38bdf8);
+      color: #fff; font-weight: 700; cursor: pointer; font-size: 14px;
+    }
+    .btn-cancel { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #2a2a4a; background: transparent; color: #888; cursor: pointer; font-size: 14px; }
+
+    /* Action buttons */
+    .action-row { display: flex; gap: 10px; margin-bottom: 1.5rem; justify-content: center; flex-wrap: wrap; }
+    .btn-checkin {
+      padding: 10px 20px; border-radius: 12px; border: 1px solid #6c63ff;
+      background: #6c63ff22; color: #a78bfa; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-checkin:hover { background: #6c63ff44; box-shadow: 0 0 15px #6c63ff44; }
+    .btn-pdf {
+      padding: 10px 20px; border-radius: 12px; border: 1px solid #4ade80;
+      background: #4ade8022; color: #4ade80; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-pdf:hover { background: #4ade8044; box-shadow: 0 0 15px #4ade8044; }
+
+    .empty { color: #444; font-size: 0.85rem; padding: 0.5rem 0; }
+    .loading-wrap { text-align: center; padding: 4rem; }
+    .loading-spinner { width: 50px; height: 50px; border: 3px solid #1a1a3a; border-top: 3px solid #6c63ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: #666; font-size: 0.9rem; }
+
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<!-- Check-in Modal -->
+<div class="modal-overlay hidden" id="checkinModal">
+  <div class="modal">
+    <h2>📝 Daily Check-in</h2>
+    <p>How are you feeling today? This updates your wellbeing data.</p>
+    <div class="form-group">
+      <label>Mood Score (1-10)</label>
+      <input type="number" id="ci_mood" min="1" max="10" value="7" placeholder="7">
+    </div>
+    <div class="form-group">
+      <label>Sleep Hours</label>
+      <input type="number" id="ci_sleep" min="0" max="12" step="0.5" value="7" placeholder="7">
+    </div>
+    <div class="form-group">
+      <label>Study Hours</label>
+      <input type="number" id="ci_study" min="0" max="16" step="0.5" value="3" placeholder="3">
+    </div>
+    <div class="form-group">
+      <label>Energy Level</label>
+      <select id="ci_energy">
+        <option value="high">High ⚡</option>
+        <option value="medium" selected>Medium 🔋</option>
+        <option value="low">Low 😴</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeCheckin()">Cancel</button>
+      <button class="btn-save" onclick="saveCheckin()">Save & Analyze ✨</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <header>
+    <div class="brain-wrap">
+      <div class="brain-3d"></div>
+    </div>
+    <h1>Mental Load Monitor</h1>
+    <p>Your personal student wellness agent — powered by Coral SQL</p>
+  </header>
+
+  <div class="date-row">
+    <input type="date" id="dateInput" value="2026-05-23">
+    <button class="btn-analyze" onclick="analyze()">⚡ Analyze</button>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-checkin" onclick="openCheckin()">📝 Daily Check-in</button>
+    <button class="btn-pdf" onclick="exportPDF()">📄 Export Report</button>
+  </div>
+
+  <div class="coral-badge">
+    🪸 Powered by Coral — cross-source SQL JOIN across tasks.csv + wellbeing.csv
+  </div>
+
+  <!-- Overload Alert -->
+  <div class="alert-banner hidden" id="alertBanner">
+    <div class="alert-icon">🚨</div>
+    <div>
+      <h3>OVERLOAD DETECTED!</h3>
+      <p>Your mental load is critically high. Consider cancelling non-essential tasks today.</p>
+    </div>
+  </div>
+
+  <div id="loadingWrap" class="loading-wrap hidden">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">🔍 Querying sources with Coral SQL...</div>
+  </div>
+
+  <div id="results" class="hidden">
+
+    <div class="grid">
+      <div class="card">
+        <h3>📊 Today's Mental Load</h3>
+        <div class="score-big" id="scoreNum">0</div>
+        <div class="score-sub">out of 100</div>
+        <div class="level-badge" id="levelBadge">LOW</div>
+      </div>
+      <div class="card">
+        <h3>💡 Recommendation</h3>
+        <div class="advice-emoji" id="adviceEmoji"></div>
+        <div class="advice-level" id="adviceLevel"></div>
+        <div class="advice-text" id="adviceMsg"></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>⚡ Stress Factors</h3>
+        <div id="reasonsList"></div>
+      </div>
+      <div class="card">
+        <h3>💤 Today's Wellbeing</h3>
+        <div class="wb-grid" id="wellbeingGrid"></div>
+      </div>
+    </div>
+
+    <div class="card full">
+      <h3>🚨 Urgent Pending Tasks</h3>
+      <div id="urgentList"></div>
+    </div>
+
+    <div class="card full">
+      <h3>📈 Weekly Mood Trend</h3>
+      <div class="trend-row" id="trendRow"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ---- PARTICLES ----
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+  const particles = Array.from({length: 60}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 1.5 + 0.5,
+    dx: (Math.random() - 0.5) * 0.3,
+    dy: (Math.random() - 0.5) * 0.3,
+    opacity: Math.random() * 0.5 + 0.1
+  }));
+
+  function drawParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(108, 99, 255, ${p.opacity})`;
+      ctx.fill();
+      p.x += p.dx; p.y += p.dy;
+      if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+      if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+    });
+    requestAnimationFrame(drawParticles);
+  }
+  drawParticles();
+
+  // ---- SCORE COUNTER ANIMATION ----
+  function animateScore(target, color) {
+    const el = document.getElementById('scoreNum');
+    el.style.color = color;
+    let current = 0;
+    const step = Math.ceil(target / 40);
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      el.textContent = current;
+      if (current >= target) clearInterval(timer);
+    }, 30);
+  }
+
+  // ---- MODAL ----
+  function openCheckin() { document.getElementById('checkinModal').classList.remove('hidden'); }
+  function closeCheckin() { document.getElementById('checkinModal').classList.add('hidden'); }
+
+  function saveCheckin() {
+    const mood = document.getElementById('ci_mood').value;
+    const sleep = document.getElementById('ci_sleep').value;
+    const study = document.getElementById('ci_study').value;
+    const energy = document.getElementById('ci_energy').value;
+    const date = document.getElementById('dateInput').value;
+    alert(`✅ Check-in saved!\nDate: ${date}\nMood: ${mood}/10 | Sleep: ${sleep}h | Study: ${study}h | Energy: ${energy}\n\nIn full version, this updates your wellbeing.csv via API!`);
+    closeCheckin();
+    analyze();
+  }
+
+  // ---- PDF EXPORT ----
+  function exportPDF() {
+    const score = document.getElementById('scoreNum').textContent;
+    const level = document.getElementById('levelBadge').textContent;
+    const advice = document.getElementById('adviceMsg').textContent;
+    const date = document.getElementById('dateInput').value;
+    const content = `MENTAL LOAD MONITOR - REPORT\n${'='.repeat(40)}\nDate: ${date}\nMental Load Score: ${score}/100\nLevel: ${level}\n\nRecommendation:\n${advice}\n\n${'='.repeat(40)}\nGenerated by Mental Load Monitor\nPowered by Coral SQL`;
+    const blob = new Blob([content], {type: 'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `mental-load-report-${date}.txt`;
+    a.click();
+  }
+
+  // ---- MAIN ANALYZE ----
+  async function analyze() {
+    const date = document.getElementById('dateInput').value;
+    document.getElementById('loadingWrap').classList.remove('hidden');
+    document.getElementById('results').classList.add('hidden');
+    document.getElementById('alertBanner').classList.add('hidden');
+
+    try {
+      const res = await fetch(`/api/analyze?date=${date}`);
+      const json = await res.json();
+
+      if (json.success) {
+        const d = json.data;
+
+        // Overload alert
+        if (d.score >= 70) {
+          document.getElementById('alertBanner').classList.remove('hidden');
+        }
+
+        // Score animation
+        animateScore(d.score, d.advice.color);
+        document.getElementById('levelBadge').textContent = d.advice.level;
+        document.getElementById('levelBadge').style.background = d.advice.color + '22';
+        document.getElementById('levelBadge').style.color = d.advice.color;
+        document.getElementById('levelBadge').style.border = `1px solid ${d.advice.color}`;
+
+        // Advice
+        document.getElementById('adviceEmoji').textContent = d.advice.emoji;
+        document.getElementById('adviceLevel').textContent = d.advice.level + ' LOAD';
+        document.getElementById('adviceLevel').style.color = d.advice.color;
+        document.getElementById('adviceMsg').textContent = d.advice.message;
+
+        // Reasons
+        document.getElementById('reasonsList').innerHTML = d.reasons.length > 0
+          ? d.reasons.map(r => `<div class="reason-item">⚠️ ${r}</div>`).join('')
+          : '<div class="empty">✅ No major stress factors today!</div>';
+
+        // Wellbeing
+        const wb = d.todayWellbeing;
+        document.getElementById('wellbeingGrid').innerHTML = wb ? `
+          <div class="wb-item"><div class="wb-value">${wb.mood_score}/10</div><div class="wb-label">Mood</div></div>
+          <div class="wb-item"><div class="wb-value">${wb.sleep_hours}h</div><div class="wb-label">Sleep</div></div>
+          <div class="wb-item"><div class="wb-value">${wb.study_hours}h</div><div class="wb-label">Study</div></div>
+          <div class="wb-item"><div class="wb-value">${wb.energy_level}</div><div class="wb-label">Energy</div></div>
+        ` : '<div class="empty">No wellbeing data for this date</div>';
+
+        // Urgent tasks
+        document.getElementById('urgentList').innerHTML = d.urgentPending.length > 0
+          ? d.urgentPending.map(t => `
+            <div class="task-item">
+              <div>
+                <div class="task-name">${t.task}</div>
+                <div class="task-meta">${t.subject} · Due: ${t.due_date}</div>
+              </div>
+              <span class="priority-badge p-${t.priority}">${t.priority.toUpperCase()}</span>
+            </div>`).join('')
+          : '<div class="empty">✅ No urgent pending tasks!</div>';
+
+        // Weekly trend
+        const maxMood = 10;
+        document.getElementById('trendRow').innerHTML = d.weeklyTrend.map(w => {
+          const height = Math.max((w.mood / maxMood) * 80, 6);
+          const color = w.mood >= 7 ? '#4ade80' : w.mood >= 5 ? '#f39c12' : '#e74c3c';
+          return `
+            <div class="trend-col">
+              <div class="trend-val">${w.mood}</div>
+              <div class="trend-bar" style="height:${height}px;background:${color};color:${color};"></div>
+              <div class="trend-date">${w.date.slice(5)}</div>
+            </div>`;
+        }).join('');
+
+        document.getElementById('loadingWrap').classList.add('hidden');
+        document.getElementById('results').classList.remove('hidden');
+      }
+    } catch (err) {
+      document.getElementById('loadingWrap').innerHTML = '<div class="loading-text">❌ Error! Make sure server is running.</div>';
+    }
+  }
+
+  analyze();
+</script>
+</body>
+</html>
